@@ -2,26 +2,76 @@ import tkinter as tk # 图形界面库
 import tkinter.messagebox as msg #消息框
 import sqlite3 as sql # 数据库连接
 import hashlib # 哈希加密库
+import os
 
-# 初始化数据库
-database_path = r""
-database_connection = sql.connect(database_path)
-database_cursor = database_connection.cursor()
 
-# 定义调试用户
-default_username = "admin"
-default_password = "123456"
 
 # 定义日志字段
-# rating = 5.0
-# log_string = "{"+f'"rating":{rating}  '+"}"
+# log_string = 
+# type_op out_time user book
+op = 1
+out_time = 202505232035
+userID ="admin"
+bookID="23413424"
+log_string = "{"+f'"type_op":{op}, "out_time":{out_time}, "user"{userID},"book":{bookID}  '+"}"
 
 # 定义功能函数
 def sign_in():
-    msg.showinfo("标题","你点击了登录按钮")
+    # 获取登录窗口的用户名和密码输入框
+    log_window = None
+    username_entry = None
+    password_entry = None
+    # 查找当前所有Toplevel窗口，找到标题为"登录"的窗口
+    for widget in tk._default_root.winfo_children():
+        if isinstance(widget, tk.Toplevel) and widget.title() == "登录":
+            log_window = widget
+            # 获取输入框
+            for child in widget.winfo_children():
+                if isinstance(child, tk.Frame):
+                    entries = child.winfo_children()
+                    for entry in entries:
+                        if isinstance(entry, tk.Entry):
+                            if not username_entry:
+                                username_entry = entry
+                            else:
+                                password_entry = entry
+            break
 
-def sign_up():
-    msg.showinfo("标题","你点击了注册按钮")
+    if not log_window or not username_entry or not password_entry:
+        msg.showerror("错误", "无法获取登录窗口控件")
+        return
+
+    username = username_entry.get().strip()
+    password = password_entry.get()
+
+    if not username or not password:
+        msg.showwarning("警告", "请输入用户名和密码")
+        return
+
+    # 查询数据库，获取加密密码和盐及用户类型
+    database_cursor.execute("SELECT user_passwd_e, salt, user_cate FROM user_info WHERE user_name=?", (username,))
+    result = database_cursor.fetchone()
+    if not result:
+        msg.showerror("登录失败", "用户名不存在")
+        return
+
+    password_hash_db, salt, user_type = result
+    password_hash_input = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+    if password_hash_input != password_hash_db:
+        msg.showerror("登录失败", "密码错误")
+        return
+
+    msg.showinfo("登录成功", f"欢迎，{username}！")
+    log_window.destroy()
+    print(user_type)
+    print(type(user_type))
+
+    if user_type == "2":
+        admin_window()
+    else:
+        reader_window()
+
+
 
 def log_window_launch():
     log_window = tk.Toplevel(root)
@@ -93,7 +143,7 @@ def reg_window_launch():
     confirm_password_entry.grid(row=2, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
     tk.Label(input_frame, text="用户类型：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=3, column=0, padx=5, pady=8, sticky="e")
-    user_type_var = tk.IntVar(value=1)
+    user_type_var = tk.IntVar(value=0)
     user_cate_radiobtn1 = tk.Radiobutton(input_frame, text="普通用户", variable=user_type_var, value=1, bg="#f5f6fa", font=("微软雅黑", 11))
     user_cate_radiobtn2 = tk.Radiobutton(input_frame, text="管理员", variable=user_type_var, value=2, bg="#f5f6fa", font=("微软雅黑", 11))
     user_cate_radiobtn1.grid(row=3, column=1, sticky="w", padx=2)
@@ -116,12 +166,53 @@ def reg_window_launch():
         "relief": "flat",
         "cursor": "hand2"
     }
-    tk.Button(btn_frame, text="注册", command=sign_up, **btn_style).pack(side="left", padx=14)
+    tk.Button(
+        btn_frame,
+        text="注册",
+        command=lambda: sign_up(username_entry, password_entry, confirm_password_entry, user_type_var),
+        **btn_style
+    ).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=reg_window.destroy, **btn_style).pack(side="left", padx=14)
 
-    reg_window.protocol("WM_DELETE_WINDOW", reg_window.destroy)
-    reg_window.transient(root)
 
+def sign_up(username_entry, password_entry, confirm_password_entry, user_type_var):
+    username = username_entry.get().strip()
+    password = password_entry.get()
+    confirm_password = confirm_password_entry.get()
+    user_type = user_type_var.get()
+
+    if not username or not password or not confirm_password:
+        msg.showwarning("警告", "请填写所有字段")
+        return
+
+    if password != confirm_password:
+        msg.showwarning("警告", "两次输入的密码不一致")
+        return
+
+    # 检查用户名是否已存在
+    database_cursor.execute("SELECT * FROM user_info WHERE user_name=?", (username,))
+    if database_cursor.fetchone():
+        msg.showwarning("警告", "用户名已存在")
+        return
+
+    # 密码加密
+    salt = os.urandom(16).hex()  # 生成随机盐
+    password_hash = hashlib.sha256((password+salt).encode('utf-8')).hexdigest()
+
+    try:
+        database_cursor.execute(
+            "INSERT INTO user_info (user_name, user_passwd_e, salt ,user_cate) VALUES (?, ?, ?, ?)",
+            (username, password_hash, salt, user_type)
+        )
+        database_connection.commit()
+        msg.showinfo("注册成功", "注册成功，请登录！")
+        # 关闭注册窗口
+        for widget in tk._default_root.winfo_children():
+            if isinstance(widget, tk.Toplevel) and widget.title() == "注册":
+                widget.destroy()
+                break
+    except Exception as e:
+        msg.showerror("错误", f"注册失败: {e}")
 
 def add_book():
     pass
@@ -149,6 +240,7 @@ def view_borrow_history_total():
     pass
 
 def admin_window():
+    print("我是管理员")
     main_window = tk.Toplevel(root)
     main_window.title("主窗口")
     main_window.geometry("600x500")
@@ -172,6 +264,7 @@ def admin_window():
 
 
 def reader_window():
+    print("我是普通用户")
     reader_window = tk.Toplevel(root)
     reader_window.title("主窗口")
     reader_window.geometry("600x500")
@@ -191,6 +284,13 @@ def reader_window():
     for text, cmd in btn_texts_cmds:
         tk.Button(btn_frame, text=text, width=18, command=cmd).pack(pady=3)
 
+
+
+
+# 初始化数据库
+database_path = r"data.db"
+database_connection = sql.connect(database_path)
+database_cursor = database_connection.cursor()
 root = tk.Tk()
 root.title("图书管理系统")
 root.geometry("400x550")
