@@ -4,7 +4,7 @@ import sqlite3 as sql # 数据库连接
 import hashlib # 哈希加密库
 
 # 初始化数据库
-database_path = r"database.db"
+database_path = r""
 database_connection = sql.connect(database_path)
 database_cursor = database_connection.cursor()
 
