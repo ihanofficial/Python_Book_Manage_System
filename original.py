@@ -13,8 +13,8 @@ op = 1
 out_time = 202505232035
 userID ="admin"
 bookID="23413424"
-log_string = "{"+f'"type_op":{op}, "out_time":{out_time}, "user"{userID},"book":{bookID}  '+"}"
-
+log_string = "{"+f'"type_op":{op}, "out_time":{out_time}, "user"{userID},"book":{bookID}'+"}"
+print(log_string)
 # 定义功能函数
 def sign_in():
     # 获取登录窗口的用户名和密码输入框
