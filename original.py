@@ -12,6 +12,9 @@ database_cursor = database_connection.cursor()
 default_username = "admin"
 default_password = "123456"
 
+# 定义日志字段
+# rating = 5.0
+# log_string = "{"+f'"rating":{rating}  '+"}"
 
 # 定义功能函数
 def sign_in():
