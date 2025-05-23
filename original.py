@@ -104,21 +104,27 @@ def view_borrow_history():
 def admin_window():
     main_window = tk.Toplevel(root)
     main_window.title("主窗口")
-    main_window.geometry("400x300")
-    tk.Label(main_window, text="欢迎使用图书管理系统！").pack(pady=20)
-    tk.Button(main_window, text="添加书籍", command=add_book).pack(pady=20)
-    tk.Button(main_window, text="删除书籍", command=delete_book).pack(pady=20)
-    tk.Button(main_window, text="修改书籍信息", command=modify_book).pack(pady=20)
-    tk.Button(main_window, text="查询书籍", command=search_book).pack(pady=20)
-    tk.Button(main_window, text="借阅书籍", command=borrow_book).pack(pady=20)
-    tk.Button(main_window, text="归还书籍", command=return_book).pack(pady=20)
-    tk.Button(main_window, text="查看借阅记录", command=view_borrow_history).pack(pady=20)
-    tk.Button(main_window, text="查看书籍列表", command=view_book_list).pack(pady=20)
-    tk.Button(main_window, text="查看个人信息", command=view_user_info).pack(pady=20)
-    tk.Button(main_window, text="查看借阅书籍", command=view_borrowed_books).pack(pady=20)
-    tk.Button(main_window, text="查看用户信息", command=view_user_info).pack(pady=20)
-    tk.Button(main_window, text="查看借阅历史", command=view_borrow_history).pack(pady=20)
-    tk.Button(main_window, text="退出", command=main_window.destroy).pack(pady=20)
+    main_window.geometry("600x500")
+    tk.Label(main_window, text="欢迎使用图书管理系统！").pack(pady=10)
+    btn_texts_cmds = [
+        ("添加书籍", add_book),
+        ("删除书籍", delete_book),
+        ("修改书籍信息", modify_book),
+        ("查询书籍", search_book),
+        ("借阅书籍", borrow_book),
+        ("归还书籍", return_book),
+        ("查看借阅记录", view_borrow_history),
+        ("查看书籍列表", view_book_list),
+        ("查看个人信息", view_user_info),
+        ("查看借阅书籍", view_borrowed_books),
+        ("查看用户信息", view_user_info),
+        ("查看借阅历史", view_borrow_history),
+        ("退出", main_window.destroy)
+    ]
+    btn_frame = tk.Frame(main_window)
+    btn_frame.pack(pady=10)
+    for text, cmd in btn_texts_cmds:
+        tk.Button(btn_frame, text=text, width=18, command=cmd).pack(pady=3)
 
 
 def reader_window():
