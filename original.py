@@ -9,6 +9,17 @@ import os
 # 定义日志字段
 # log_string = 
 # type_op out_time user book
+
+# 初始化数据库
+database_path = r"data.db"
+database_connection = sql.connect(database_path)
+database_cursor = database_connection.cursor()
+root = tk.Tk()
+root.title("图书管理系统")
+root.geometry("400x550")
+root.resizable(False, False)
+
+
 op = 1
 out_time = 202505232035
 userID ="admin"
@@ -319,7 +330,6 @@ def add_book_confirm(title_entry, author_entry, publisher_entry, year_entry,
         )
         database_connection.commit()
         msg.showinfo("添加成功", "书籍添加成功！")
-        add_book_window.destroy()
     except Exception as e:
         msg.showerror("错误", f"添加书籍失败: {e}")
 
@@ -396,14 +406,7 @@ def reader_window():
 
 
 
-# 初始化数据库
-database_path = r"data.db"
-database_connection = sql.connect(database_path)
-database_cursor = database_connection.cursor()
-root = tk.Tk()
-root.title("图书管理系统")
-root.geometry("400x550")
-root.resizable(False, False)
+
 
 # 设置整体背景色
 root.configure(bg="#f5f6fa")
