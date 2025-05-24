@@ -214,8 +214,117 @@ def sign_up(username_entry, password_entry, confirm_password_entry, user_type_va
     except Exception as e:
         msg.showerror("错误", f"注册失败: {e}")
 
+# 图书信息表字段
+# ["barcode", "title", "author", "publisher", "year", "isbn", "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"] 
+
+
+
+
 def add_book():
-    pass
+    add_book_window = tk.Toplevel(root)
+    add_book_window.title("添加书籍")
+    add_book_window.geometry("400x500")
+    add_book_window.configure(bg="#f5f6fa")
+    tk.Label(add_book_window, text="添加书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    # 输入区
+    input_frame = tk.Frame(add_book_window, bg="#f5f6fa")
+    input_frame.pack(pady=10, padx=20, fill="x")
+    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="作者：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=8, sticky="e")
+    author_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    author_entry.grid(row=1, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="出版社：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=2, column=0, padx=5, pady=8, sticky="e")
+    publisher_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    publisher_entry.grid(row=2, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="出版年份：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=3, column=0, padx=5, pady=8, sticky="e")
+    year_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    year_entry.grid(row=3, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="ISBN：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=4, column=0, padx=5, pady=8, sticky="e")
+    isbn_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    isbn_entry.grid(row=4, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="分类号：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=5, column=0, padx=5, pady=8, sticky="e")
+    clc_code_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    clc_code_entry.grid(row=5, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="索书号：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=6, column=0, padx=5, pady=8, sticky="e")
+    call_number_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    call_number_entry.grid(row=6, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="可借阅数量：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=7, column=0, padx=5, pady=8, sticky="e")
+    available_copies_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    available_copies_entry.grid(row=7, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="总数量：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=8, column=0, padx=5, pady=8, sticky="e")
+    total_copies_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    total_copies_entry.grid(row=8, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    # 按钮区
+    btn_frame = tk.Frame(add_book_window, bg="#f5f6fa")
+    btn_frame.pack(pady=18)
+    btn_style = {
+        "font": ("微软雅黑", 12),
+        "width": 10,
+        "bg": "#40739e",
+        "fg": "white",
+        "activebackground": "#718093",
+        "activeforeground": "white",
+        "bd": 0,
+        "relief": "flat",
+        "cursor": "hand2"
+    }
+    tk.Button(
+        btn_frame,
+        text="添加",
+        command=lambda: add_book_confirm(
+            title_entry, author_entry, publisher_entry, year_entry,
+            isbn_entry, clc_code_entry, call_number_entry,
+            available_copies_entry, total_copies_entry
+        ),
+        **btn_style
+    ).pack(side="left", padx=14)
+    tk.Button(btn_frame, text="取消", command=add_book_window.destroy, **btn_style).pack(side="left", padx=14)
+
+def add_book_confirm(title_entry, author_entry, publisher_entry, year_entry,
+            isbn_entry, clc_code_entry, call_number_entry,
+            available_copies_entry, total_copies_entry):
+    # 获取输入框的值
+    title = title_entry.get().strip()
+    author = author_entry.get().strip()
+    publisher = publisher_entry.get().strip()
+    year = year_entry.get().strip()
+    isbn = isbn_entry.get().strip()
+    clc_code = clc_code_entry.get().strip()
+    call_number = call_number_entry.get().strip()
+    available_copies = available_copies_entry.get().strip()
+    total_copies = total_copies_entry.get().strip()
+
+    # 检查是否为空
+    if not all([title, author, publisher, year, isbn, clc_code, call_number, available_copies, total_copies]):
+        msg.showwarning("警告", "请填写所有字段")
+        return
+
+    # 检查ISBN格式
+    if not isbn.isdigit() or len(isbn) != 13:
+        msg.showwarning("警告", "ISBN必须是13位数字")
+        return
+
+    # 检查数量是否为正整数
+    if not (available_copies.isdigit() and total_copies.isdigit()):
+        msg.showwarning("警告", "可借阅数量和总数量必须是正整数")
+        return
+
+    # 插入数据到数据库
+    try:
+        database_cursor.execute(
+            "INSERT INTO book_info (title, author, publisher, year, isbn, clc_code, call_number, avaliable_copies, total_copies) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (title, author, publisher, year, isbn, clc_code, call_number, int(available_copies), int(total_copies))
+        )
+        database_connection.commit()
+        msg.showinfo("添加成功", "书籍添加成功！")
+        add_book_window.destroy()
+    except Exception as e:
+        msg.showerror("错误", f"添加书籍失败: {e}")
+
+
+
 def delete_book():
     pass
 def modify_book():
