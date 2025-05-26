@@ -21,15 +21,10 @@ root.title("图书管理系统")
 root.geometry("400x550")
 root.resizable(False, False)
 
-
-op = 1
-out_time = 202505232035
-userID ="admin"
-bookID="23413424"
-log_string = "{"+f'"type_op":{op}, "out_time":{out_time}, "user"{userID},"book":{bookID}'+"}"
-print(log_string)
+UserID = ""
 # 定义功能函数
 def sign_in():
+    global UserID 
     # 获取登录窗口的用户名和密码输入框
     log_window = None
     username_entry = None
@@ -78,7 +73,7 @@ def sign_in():
     log_window.destroy()
     print(user_type)
     print(type(user_type))
-
+    UserID = username
     if user_type == "2":
         admin_window()
     else:
@@ -390,40 +385,123 @@ def delete_book_confirm(barcode_entry):
     except Exception as e:
         msg.showerror("错误", f"删除书籍失败: {e}")
 
-
 def modify_book():
+    # 创建窗口
     modify_book_window = tk.Toplevel(root)
     modify_book_window.title("修改书籍信息")
-    modify_book_window.geometry("400x500")
+    modify_book_window.geometry("950x350")
     modify_book_window.configure(bg="#f5f6fa")
-    tk.Label(modify_book_window, text="修改书籍信息", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
-    # 输入区
-    input_frame = tk.Frame(modify_book_window, bg="#f5f6fa")
-    input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    # 按钮区
+
+    tk.Label(modify_book_window, text="修改书籍信息", font=("微软雅黑", 18, "bold"),
+             bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+
+    # 查找栏
+    search_frame = tk.Frame(modify_book_window, bg="#f5f6fa")
+    search_frame.pack(pady=5, padx=10, fill="x")
+    tk.Label(search_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").pack(side="left")
+    search_entry = tk.Entry(search_frame, font=("微软雅黑", 12), width=30)
+    search_entry.pack(side="left", padx=5)
+    # Treeview显示区
+    columns = [
+        "barcode", "title", "author", "publisher", "year", "isbn",
+        "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"
+    ]
+    col_names = [
+        "条形码", "书名", "作者", "出版社", "年份", "ISBN",
+        "分类号", "索书号", "可借阅数量", "总数量", "借阅次数"
+    ]
+    tree = ttk.Treeview(modify_book_window, columns=columns, show="headings", height=5)
+    for col, name in zip(columns, col_names):
+        tree.heading(col, text=name)
+        tree.column(col, width=80, anchor="center")
+    tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # 可编辑Treeview：双击单元格弹出Entry进行编辑
+    edit_widgets = {}
+
+    def on_tree_double_click(event):
+        item = tree.identify_row(event.y)
+        column = tree.identify_column(event.x)
+        if not item or not column:
+            return
+        col_idx = int(column.replace("#", "")) - 1
+        if col_idx < 0 or col_idx >= len(columns):
+            return
+        col = columns[col_idx]
+        if col == "lend_times":
+            msg.showerror("错误","系统不允许直接修改借阅次数")
+            return
+        x, y, width, height = tree.bbox(item, column)
+        value = tree.set(item, col)
+        entry = tk.Entry(tree, font=("微软雅黑", 12))
+        entry.insert(0, value)
+        entry.place(x=x, y=y, width=width, height=height)
+        entry.focus()
+
+        def save_edit(event=None):
+            new_value = entry.get()
+            tree.set(item, col, new_value)
+            entry.destroy()
+        entry.bind("<Return>", save_edit)
+        entry.bind("<FocusOut>", lambda e: entry.destroy())
+        edit_widgets[(item, col)] = entry
+
+    tree.bind("<Double-1>", on_tree_double_click)
+
+    # 查找按钮
+    def search_and_show():
+        for row in tree.get_children():
+            tree.delete(row)
+        title = search_entry.get().strip()
+        if not title:
+            msg.showwarning("警告", "请输入书名")
+            return
+        try:
+            database_cursor.execute("SELECT * FROM book_info WHERE title=?", (title,))
+            result = database_cursor.fetchone()
+            if result:
+                tree.insert("", "end", values=result)
+            else:
+                msg.showwarning("未找到", "未找到该书籍")
+        except Exception as e:
+            msg.showerror("错误", f"查询失败: {e}")
+
+    tk.Button(search_frame, text="查找", font=("微软雅黑", 12), bg="#40739e", fg="white",
+              activebackground="#718093", activeforeground="white", bd=0, relief="flat",
+              cursor="hand2", command=search_and_show).pack(side="left", padx=8)
+
+    # 保存更改按钮
+    def save_changes():
+        items = tree.get_children()
+        if not items:
+            msg.showwarning("警告", "没有可保存的数据")
+            return
+        item = items[0]
+        values = tree.item(item, "values")
+        # 字段顺序: barcode, title, author, publisher, year, isbn, clc_code, call_number, avaliable_copies, total_copies, lend_times
+        try:
+            database_cursor.execute(
+                """UPDATE book_info SET
+                    title=?, author=?, publisher=?, year=?, isbn=?, clc_code=?, call_number=?, avaliable_copies=?, total_copies=?
+                   WHERE barcode=?""",
+                (
+                    values[1], values[2], values[3], values[4], values[5], values[6], values[7],
+                    int(values[8]), int(values[9]), values[0]
+                )
+            )
+            database_connection.commit()
+            msg.showinfo("成功", "更改已保存到数据库")
+        except Exception as e:
+            msg.showerror("错误", f"保存更改失败: {e}")
+
     btn_frame = tk.Frame(modify_book_window, bg="#f5f6fa")
-    btn_frame.pack(pady=18)
-    btn_style = {
-        "font": ("微软雅黑", 12),
-        "width": 10,
-        "bg": "#40739e",
-        "fg": "white",
-        "activebackground": "#718093",
-        "activeforeground": "white",
-        "bd": 0,
-        "relief": "flat",
-        "cursor": "hand2"
-    }
-    tk.Button(
-        btn_frame,
-        text="修改",
-        command=lambda: modify_book_confirm(title_entry),
-        **btn_style
-    ).pack(side="left", padx=14)
-    tk.Button(btn_frame, text="取消", command=modify_book_window.destroy, **btn_style).pack(side="left", padx=14)
+    btn_frame.pack(pady=10)
+    tk.Button(btn_frame, text="保存更改", font=("微软雅黑", 12), bg="#40739e", fg="white",
+              activebackground="#718093", activeforeground="white", bd=0, relief="flat",
+              cursor="hand2", command=save_changes).pack(side="left", padx=14)
+    tk.Button(btn_frame, text="关闭", font=("微软雅黑", 12), bg="#40739e", fg="white",
+              activebackground="#718093", activeforeground="white", bd=0, relief="flat",
+              cursor="hand2", command=modify_book_window.destroy).pack(side="left", padx=14)
 
 def modify_book_confirm(title_entry):
     # 获取输入框的值
@@ -495,7 +573,28 @@ def search_book_confirm(title_entry):
         )
         result = database_cursor.fetchone()
         if result:
-            msg.showinfo("查询成功", f"书籍信息：{result}")
+            # 用Treeview显示查找到的书籍信息
+            info_window = tk.Toplevel(root)
+            info_window.title("书籍信息")
+            info_window.geometry("900x120")
+            info_window.configure(bg="#f5f6fa")
+
+            columns = [
+                "barcode", "title", "author", "publisher", "year", "isbn",
+                "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"
+            ]
+            col_names = [
+                "条形码", "书名", "作者", "出版社", "年份", "ISBN",
+                "分类号", "索书号", "可借阅数量", "总数量", "借阅次数"
+            ]
+
+            tree = ttk.Treeview(info_window, columns=columns, show="headings", height=1)
+            for col, name in zip(columns, col_names):
+                tree.heading(col, text=name)
+                tree.column(col, width=80, anchor="center")
+            tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+            tree.insert("", "end", values=result)
         else:
             msg.showwarning("查询失败", "未找到该书籍")
     except Exception as e:
@@ -556,7 +655,7 @@ def borrow_book():
             op = 1  # 1代表借阅
             out_time = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
             # 获取当前登录用户名
-            current_user = "admin"  # 这里应替换为实际登录用户名
+            current_user = UserID  # 这里应替换为实际登录用户名
             bookID = book_isbn
             log_string = "{" + f'"type_op":{op}, "out_time":{out_time}, "user":"{current_user}","book":"{bookID}"' + "}"
             with open("log.jsonl", "a", encoding="utf-8") as f:
@@ -600,21 +699,34 @@ def return_book():
             msg.showwarning("警告", "请输入书名")
             return
         try:
-            # 查询书籍是否存在且可借阅
-            database_cursor.execute("SELECT avaliable_copies FROM book_info WHERE title=?", (title,))
+            # 查询书籍是否存在
+            database_cursor.execute("SELECT avaliable_copies, rowid, isbn FROM book_info WHERE title=?", (title,))
             result = database_cursor.fetchone()
             if not result:
                 msg.showwarning("警告", "未找到该书籍")
                 return
-            available = result[0]
-            # 假设当前登录用户为userID（可根据实际登录用户调整）
+            available, book_rowid, book_isbn = result
             # 归还操作
             database_cursor.execute(
-                "UPDATE book_info SET avaliable_copies=avaliable_copies+1 WHERE title=?",
-                (title,)
+                "UPDATE book_info SET avaliable_copies=avaliable_copies+1 WHERE rowid=?",
+                (book_rowid,)
             )
+            database_connection.commit()
+            msg.showinfo("归还成功", "归还成功！")
+            # 写入日志
+            op = 2  # 2代表归还
+            out_time = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+            current_user = UserID  # 这里应替换为实际登录用户名
+            bookID = book_isbn
+            log_string = "{" + f'"type_op":{op}, "out_time":{out_time}, "user":"{current_user}","book":"{bookID}"' + "}"
+            with open("log.jsonl", "a", encoding="utf-8") as f:
+                f.write(log_string + "\n")
+            return_book_window.destroy()
         except Exception as e:
             msg.showerror("错误", f"归还书籍失败: {e}")
+
+    tk.Button(btn_frame, text="归还", command=return_book_confirm, **btn_style).pack(side="left", padx=14)
+    tk.Button(btn_frame, text="取消", command=return_book_window.destroy, **btn_style).pack(side="left", padx=14)
 def view_borrowed_books():
     import tkinter.simpledialog
 
@@ -761,7 +873,7 @@ def view_borrow_history():
     text.insert("end", result_str)
     text.config(state="disabled")
 def view_borrow_history_total():
-    # 管理员查看总借阅记录
+    # 管理员查看总借阅记录（Treeview显示）
     logs = []
     try:
         with open("log.jsonl", "r", encoding="utf-8") as f:
@@ -779,18 +891,25 @@ def view_borrow_history_total():
         msg.showinfo("结果", "没有借阅记录")
         return
 
-    # 显示所有借阅记录
-    result_str = "\n".join([
-        f'操作:{("借阅" if l["type_op"]==1 else "归还")}, 时间:{l["out_time"]}, 用户:{l["user"]}, 书籍:{l["book"]}'
-        for l in logs
-    ])
+    # 创建窗口和Treeview
     result_window = tk.Toplevel(root)
     result_window.title("总借阅记录")
-    result_window.geometry("600x400")
-    text = tk.Text(result_window, font=("微软雅黑", 12))
-    text.pack(expand=True, fill="both")
-    text.insert("end", result_str)
-    text.config(state="disabled")
+    result_window.geometry("700x400")
+    columns = ("type_op", "out_time", "user", "book")
+    col_names = ("操作", "时间", "用户", "书籍")
+    tree = ttk.Treeview(result_window, columns=columns, show="headings", height=18)
+    for col, name in zip(columns, col_names):
+        tree.heading(col, text=name)
+        tree.column(col, width=150 if col != "type_op" else 80, anchor="center")
+    tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+    # 插入数据
+    for l in logs:
+        op_str = "借阅" if l.get("type_op") == 1 else "归还"
+        out_time = l.get("out_time", "")
+        user = l.get("user", "")
+        book = l.get("book", "")
+        tree.insert("", "end", values=(op_str, out_time, user, book))
 
 def admin_window():
     print("我是管理员")
