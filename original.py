@@ -1022,15 +1022,11 @@ btn_frame.pack(pady=10)
 
 log_btn = tk.Button(btn_frame, text="登录", command=log_window_launch, **btn_style)
 reg_btn = tk.Button(btn_frame, text="注册", command=reg_window_launch, **btn_style)
-test_btn = tk.Button(btn_frame, text="管理员测试", command=admin_window, **btn_style)
-reader_test_btn = tk.Button(btn_frame, text="读者测试", command=reader_window, **btn_style)
 quit_btn = tk.Button(btn_frame, text="退出", command=root.quit, **btn_style)
 
 # 按钮布局
 log_btn.pack(pady=5)
 reg_btn.pack(pady=5)
-test_btn.pack(pady=5)
-reader_test_btn.pack(pady=5)
 quit_btn.pack(pady=(20, 5))
 
 root.mainloop()
