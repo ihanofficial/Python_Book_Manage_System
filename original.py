@@ -610,9 +610,9 @@ def borrow_book():
     tk.Label(borrow_book_window, text="借阅书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
     input_frame = tk.Frame(borrow_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
     btn_frame = tk.Frame(borrow_book_window, bg="#f5f6fa")
     btn_frame.pack(pady=18)
@@ -628,13 +628,13 @@ def borrow_book():
         "cursor": "hand2"
     }
     def borrow_book_confirm():
-        title = title_entry.get().strip()
-        if not title:
-            msg.showwarning("警告", "请输入书名")
+        barcode = barcode_entry.get().strip()
+        if not barcode:
+            msg.showwarning("警告", "请输入条形码")
             return
         try:
             # 查询书籍是否存在且可借阅
-            database_cursor.execute("SELECT avaliable_copies, rowid, isbn FROM book_info WHERE title=?", (title,))
+            database_cursor.execute("SELECT avaliable_copies, rowid, isbn FROM book_info WHERE barcode=?", (barcode,))
             result = database_cursor.fetchone()
             if not result:
                 msg.showwarning("警告", "未找到该书籍")
@@ -643,10 +643,9 @@ def borrow_book():
             if available <= 0:
                 msg.showwarning("警告", "该书籍已无可借阅数量")
                 return
-            # 假设当前登录用户为userID（可根据实际登录用户调整）
             # 借阅操作
             database_cursor.execute(
-                "UPDATE book_info SET avaliable_copies=avaliable_copies-1, lend_times=COALESCE(lend_times,0)+1 WHERE rowid=?",
+                "UPDATE book_info SET avaliable_copies=avaliable_copies-1, lend_times=lend_times+1 WHERE rowid=?",
                 (book_rowid,)
             )
             database_connection.commit()
@@ -654,7 +653,6 @@ def borrow_book():
             # 写入日志
             op = 1  # 1代表借阅
             out_time = int(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
-            # 获取当前登录用户名
             current_user = UserID  # 这里应替换为实际登录用户名
             bookID = book_isbn
             log_string = "{" + f'"type_op":{op}, "out_time":{out_time}, "user":"{current_user}","book":"{bookID}"' + "}"
@@ -662,11 +660,10 @@ def borrow_book():
                 f.write(log_string + "\n")
             borrow_book_window.destroy()
         except Exception as e:
-            msg.showerror("错误", f"借阅失败: {e}")
+            msg.showerror("错误", f"借阅书籍失败: {e}")
 
     tk.Button(btn_frame, text="借阅", command=borrow_book_confirm, **btn_style).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=borrow_book_window.destroy, **btn_style).pack(side="left", padx=14)
-    pass
 def return_book():
     # 归还书籍窗口
     return_book_window = tk.Toplevel(root)
@@ -676,9 +673,9 @@ def return_book():
     tk.Label(return_book_window, text="归还书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
     input_frame = tk.Frame(return_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
     btn_frame = tk.Frame(return_book_window, bg="#f5f6fa")
     btn_frame.pack(pady=18)
@@ -694,13 +691,13 @@ def return_book():
         "cursor": "hand2"
     }
     def return_book_confirm():
-        title = title_entry.get().strip()
-        if not title:
-            msg.showwarning("警告", "请输入书名")
+        barcode = barcode_entry.get().strip()
+        if not barcode:
+            msg.showwarning("警告", "请输入条形码")
             return
         try:
             # 查询书籍是否存在
-            database_cursor.execute("SELECT avaliable_copies, rowid, isbn FROM book_info WHERE title=?", (title,))
+            database_cursor.execute("SELECT avaliable_copies, rowid, isbn FROM book_info WHERE barcode=?", (barcode,))
             result = database_cursor.fetchone()
             if not result:
                 msg.showwarning("警告", "未找到该书籍")
@@ -728,57 +725,68 @@ def return_book():
     tk.Button(btn_frame, text="归还", command=return_book_confirm, **btn_style).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=return_book_window.destroy, **btn_style).pack(side="left", padx=14)
 def view_borrowed_books():
-    import tkinter.simpledialog
-
-    # 让用户输入用户名
-    username = tkinter.simpledialog.askstring("输入用户名", "请输入要查询的用户名：", parent=root)
-    if not username:
-        return
-
-    # 读取log.jsonl并筛选
-    logs = []
+    # 读取所有未归还书籍（即当前用户已借但未归还的书籍）
+    borrowed_books = set()
     try:
         with open("log.jsonl", "r", encoding="utf-8") as f:
-            for line in f:
-                try:
-                    log = eval(line.strip())
-                    if str(log.get("user")) == username:
-                        logs.append(log)
-                except Exception:
-                    continue
+            logs = [eval(line.strip()) for line in f if line.strip()]
     except FileNotFoundError:
         msg.showwarning("提示", "日志文件不存在")
         return
 
-    if not logs:
-        msg.showinfo("结果", f"未找到用户 {username} 的借阅记录")
+    user_logs = [log for log in logs if log.get("user") == UserID]
+    borrow_count = {}
+    for log in user_logs:
+        book = log.get("book")
+        if log.get("type_op") == 1:  # 借阅
+            borrow_count[book] = borrow_count.get(book, 0) + 1
+        elif log.get("type_op") == 2:  # 归还
+            borrow_count[book] = borrow_count.get(book, 0) - 1
+
+    for book, count in borrow_count.items():
+        if count > 0:
+            borrowed_books.add(book)
+
+    if not borrowed_books:
+        msg.showinfo("提示", "当前没有未归还的书籍")
         return
 
-    # 显示结果
-    result_str = "\n".join([f'操作:{("借阅" if l["type_op"]==1 else "归还")}, 时间:{l["out_time"]}, 书籍:{l["book"]}' for l in logs])
-    result_window = tk.Toplevel(root)
-    result_window.title(f"{username} 的借阅记录")
-    result_window.geometry("500x400")
-    text = tk.Text(result_window, font=("微软雅黑", 12))
-    text.pack(expand=True, fill="both")
-    text.insert("end", result_str)
-    text.config(state="disabled")
-    msg.showwarning("提示", "日志文件不存在")
-    return
+    # 查询书籍详细信息
+    books_info = []
+    for isbn in borrowed_books:
+        database_cursor.execute("SELECT * FROM book_info WHERE isbn=?", (isbn,))
+        result = database_cursor.fetchone()
+        if result:
+            books_info.append(result)
 
-    if not logs:
-        msg.showinfo("结果", f"未找到用户 {username} 的借阅记录")
+    if not books_info:
+        msg.showinfo("提示", "未找到未归还书籍的详细信息")
         return
 
-    # 显示结果
-    result_str = "\n".join([f'操作:{("借阅" if l["type_op"]==1 else "归还")}, 时间:{l["out_time"]}, 书籍:{l["book"]}' for l in logs])
-    result_window = tk.Toplevel(root)
-    result_window.title(f"{username} 的借阅记录")
-    result_window.geometry("500x400")
-    text = tk.Text(result_window, font=("微软雅黑", 12))
-    text.pack(expand=True, fill="both")
-    text.insert("end", result_str)
-    text.config(state="disabled")
+    # 显示在窗口
+    window = tk.Toplevel(root)
+    window.title("未归还书籍列表")
+    window.geometry("900x300")
+    window.configure(bg="#f5f6fa")
+    tk.Label(window, text="未归还书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+
+    columns = [
+        "barcode", "title", "author", "publisher", "year", "isbn",
+        "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"
+    ]
+    col_names = [
+        "条形码", "书名", "作者", "出版社", "年份", "ISBN",
+        "分类号", "索书号", "可借阅数量", "总数量", "借阅次数"
+    ]
+
+    tree = ttk.Treeview(window, columns=columns, show="headings", height=8)
+    for col, name in zip(columns, col_names):
+        tree.heading(col, text=name)
+        tree.column(col, width=80, anchor="center")
+    tree.pack(expand=True, fill="both", padx=10, pady=10)
+
+    for book in books_info:
+        tree.insert("", "end", values=book)
 def view_book_list():
     # 读取书籍列表并用Treeview控件显示
     book_list_window = tk.Toplevel(root)
@@ -816,12 +824,7 @@ def view_book_list():
         msg.showerror("错误", f"查询书籍列表失败: {e}")
         book_list_window.destroy()
 def view_user_info():
-        # 让用户输入用户名
-        import tkinter.simpledialog
-        username = tkinter.simpledialog.askstring("输入用户名", "请输入要查询的用户名：", parent=root)
-        if not username:
-            return
-
+        username = UserID
         # 查询数据库
         try:
             database_cursor.execute("SELECT user_name, user_cate FROM user_info WHERE user_name=?", (username,))
@@ -835,14 +838,12 @@ def view_user_info():
             msg.showinfo("用户信息", info)
         except Exception as e:
             msg.showerror("错误", f"查询用户信息失败: {e}")
+
+
 def view_borrow_history():
     # 读者用户查看自己的借阅记录
     import tkinter.simpledialog
-
-    # 让用户输入用户名
-    username = tkinter.simpledialog.askstring("输入用户名", "请输入要查询的用户名：", parent=root)
-    if not username:
-        return
+    username = UserID
 
     # 读取log.jsonl并筛选
     logs = []
@@ -912,11 +913,14 @@ def view_borrow_history_total():
         tree.insert("", "end", values=(op_str, out_time, user, book))
 
 def admin_window():
-    print("我是管理员")
     main_window = tk.Toplevel(root)
-    main_window.title("主窗口")
-    main_window.geometry("600x500")
-    tk.Label(main_window, text="欢迎使用图书管理系统！").pack(pady=10)
+    main_window.title("管理员主界面")
+    main_window.geometry("600x540")
+    main_window.configure(bg="#f5f6fa")
+    tk.Label(
+        main_window, text=f"你好管理员{UserID}！", font=("微软雅黑", 20, "bold"),
+        bg="#f5f6fa", fg="#273c75"
+    ).pack(pady=(28, 18))
     btn_texts_cmds = [
         ("添加书籍", add_book),
         ("删除书籍", delete_book),
@@ -929,35 +933,65 @@ def admin_window():
         ("查看借阅书籍", view_borrowed_books),
         ("退出", main_window.destroy)
     ]
-    btn_frame = tk.Frame(main_window)
+    btn_frame = tk.Frame(main_window, bg="#f5f6fa")
     btn_frame.pack(pady=10)
-    for text, cmd in btn_texts_cmds:
-        tk.Button(btn_frame, text=text, width=18, command=cmd).pack(pady=3)
-
+    btn_style = {
+        "font": ("微软雅黑", 14),
+        "width": 18,
+        "height": 2,
+        "bg": "#40739e",
+        "fg": "white",
+        "activebackground": "#718093",
+        "activeforeground": "white",
+        "bd": 0,
+        "relief": "flat",
+        "cursor": "hand2"
+    }
+    # 两列布局
+    for idx, (text, cmd) in enumerate(btn_texts_cmds):
+        row, col = divmod(idx, 2)
+        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7, sticky="we")
+    btn_frame.grid_columnconfigure(0, weight=1)
+    btn_frame.grid_columnconfigure(1, weight=1)
 
 def reader_window():
-    print("我是普通用户")
-    reader_window = tk.Toplevel(root)
-    reader_window.title("主窗口")
-    reader_window.geometry("600x500")
-    tk.Label(reader_window, text="欢迎使用图书管理系统！").pack(pady=10)
+    reader_win = tk.Toplevel(root)
+    reader_win.title("读者主界面")
+    reader_win.geometry("600x420")
+    reader_win.configure(bg="#f5f6fa")
+    tk.Label(
+        reader_win, text=f"你好读者{UserID}！", font=("微软雅黑", 20, "bold"),
+        bg="#f5f6fa", fg="#273c75"
+    ).pack(pady=(28, 18))
     btn_texts_cmds = [
         ("查询书籍", search_book),
         ("借阅书籍", borrow_book),
         ("归还书籍", return_book),
         ("查看个人借阅记录", view_borrow_history),
         ("查看个人信息", view_user_info),
-        ("查看借阅书籍", view_borrowed_books),
         ("查看借阅历史", view_borrow_history),
-        ("退出", reader_window.destroy)
+        ("退出", reader_win.destroy)
     ]
-    btn_frame = tk.Frame(reader_window)
+    btn_frame = tk.Frame(reader_win, bg="#f5f6fa")
     btn_frame.pack(pady=10)
-    for text, cmd in btn_texts_cmds:
-        tk.Button(btn_frame, text=text, width=18, command=cmd).pack(pady=3)
-
-
-
+    btn_style = {
+        "font": ("微软雅黑", 14),
+        "width": 18,
+        "height": 2,
+        "bg": "#40739e",
+        "fg": "white",
+        "activebackground": "#718093",
+        "activeforeground": "white",
+        "bd": 0,
+        "relief": "flat",
+        "cursor": "hand2"
+    }
+    # 两列布局
+    for idx, (text, cmd) in enumerate(btn_texts_cmds):
+        row, col = divmod(idx, 2)
+        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7, sticky="we")
+    btn_frame.grid_columnconfigure(0, weight=1)
+    btn_frame.grid_columnconfigure(1, weight=1)
 
 
 
