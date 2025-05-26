@@ -3,8 +3,8 @@ import tkinter.messagebox as msg #消息框
 import sqlite3 as sql # 数据库连接
 import hashlib # 哈希加密库
 import os
+from tkinter import ttk
 import datetime # 日期时间库
-# import jsonlines  # Removed because the module is not used and not installed
 
 
 
@@ -236,42 +236,40 @@ def sign_up(username_entry, password_entry, confirm_password_entry, user_type_va
 def add_book():
     add_book_window = tk.Toplevel(root)
     add_book_window.title("添加书籍")
-    add_book_window.geometry("400x500")
+    add_book_window.geometry("420x520")
     add_book_window.configure(bg="#f5f6fa")
-    tk.Label(add_book_window, text="添加书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
-    # 输入区
+
+    tk.Label(
+        add_book_window, text="添加书籍", font=("微软雅黑", 18, "bold"),
+        bg="#f5f6fa", fg="#273c75"
+    ).pack(pady=(18, 10))
+
     input_frame = tk.Frame(add_book_window, bg="#f5f6fa")
-    input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="作者：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=8, sticky="e")
-    author_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    author_entry.grid(row=1, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="出版社：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=2, column=0, padx=5, pady=8, sticky="e")
-    publisher_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    publisher_entry.grid(row=2, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="出版年份：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=3, column=0, padx=5, pady=8, sticky="e")
-    year_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    year_entry.grid(row=3, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="ISBN：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=4, column=0, padx=5, pady=8, sticky="e")
-    isbn_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    isbn_entry.grid(row=4, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="分类号：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=5, column=0, padx=5, pady=8, sticky="e")
-    clc_code_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    clc_code_entry.grid(row=5, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="索书号：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=6, column=0, padx=5, pady=8, sticky="e")
-    call_number_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    call_number_entry.grid(row=6, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="可借阅数量：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=7, column=0, padx=5, pady=8, sticky="e")
-    available_copies_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    available_copies_entry.grid(row=7, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    tk.Label(input_frame, text="总数量：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=8, column=0, padx=5, pady=8, sticky="e")
-    total_copies_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    total_copies_entry.grid(row=8, column=1, padx=5, pady=8, sticky="we", columnspan=2)
-    # 按钮区
+    input_frame.pack(pady=10, padx=30, fill="x")
+
+    labels = [
+        "条形码(barcode)：", "书名：", "作者：", "出版社：", "出版年份：",
+        "ISBN：", "分类号：", "索书号：", "可借阅数量：", "总数量："
+    ]
+    entries = []
+    for i, label_text in enumerate(labels):
+        tk.Label(
+            input_frame, text=label_text, font=("微软雅黑", 12), bg="#f5f6fa"
+        ).grid(row=i, column=0, padx=5, pady=8, sticky="e")
+        entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+        entry.grid(row=i, column=1, padx=5, pady=8, sticky="we")
+        entries.append(entry)
+
+    input_frame.grid_columnconfigure(1, weight=1)
+
+    (
+        barcode_entry, title_entry, author_entry, publisher_entry, year_entry,
+        isbn_entry, clc_code_entry, call_number_entry,
+        available_copies_entry, total_copies_entry
+    ) = entries
+
     btn_frame = tk.Frame(add_book_window, bg="#f5f6fa")
-    btn_frame.pack(pady=18)
+    btn_frame.pack(pady=24)
     btn_style = {
         "font": ("微软雅黑", 12),
         "width": 10,
@@ -287,18 +285,21 @@ def add_book():
         btn_frame,
         text="添加",
         command=lambda: add_book_confirm(
-            title_entry, author_entry, publisher_entry, year_entry,
+            barcode_entry, title_entry, author_entry, publisher_entry, year_entry,
             isbn_entry, clc_code_entry, call_number_entry,
             available_copies_entry, total_copies_entry
         ),
         **btn_style
-    ).pack(side="left", padx=14)
-    tk.Button(btn_frame, text="取消", command=add_book_window.destroy, **btn_style).pack(side="left", padx=14)
+    ).pack(side="left", padx=18)
+    tk.Button(
+        btn_frame, text="取消", command=add_book_window.destroy, **btn_style
+    ).pack(side="left", padx=18)
 
-def add_book_confirm(title_entry, author_entry, publisher_entry, year_entry,
+def add_book_confirm(barcode_entry,title_entry, author_entry, publisher_entry, year_entry,
             isbn_entry, clc_code_entry, call_number_entry,
             available_copies_entry, total_copies_entry):
     # 获取输入框的值
+    barcode = barcode_entry.get().strip()
     title = title_entry.get().strip()
     author = author_entry.get().strip()
     publisher = publisher_entry.get().strip()
@@ -327,13 +328,14 @@ def add_book_confirm(title_entry, author_entry, publisher_entry, year_entry,
     # 插入数据到数据库
     try:
         database_cursor.execute(
-            "INSERT INTO book_info (title, author, publisher, year, isbn, clc_code, call_number, avaliable_copies, total_copies) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (title, author, publisher, year, isbn, clc_code, call_number, int(available_copies), int(total_copies))
+            "INSERT INTO book_info (barcode, title, author, publisher, year, isbn, clc_code, call_number, avaliable_copies, total_copies) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (barcode,title, author, publisher, year, isbn, clc_code, call_number, int(available_copies), int(total_copies))
         )
         database_connection.commit()
         msg.showinfo("添加成功", "书籍添加成功！")
     except Exception as e:
         msg.showerror("错误", f"添加书籍失败: {e}")
+
 def delete_book():
     delete_book_window = tk.Toplevel(root)
     delete_book_window.title("删除书籍")
@@ -343,9 +345,9 @@ def delete_book():
     # 输入区
     input_frame = tk.Frame(delete_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
-    title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
+    barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
     # 按钮区
     btn_frame = tk.Frame(delete_book_window, bg="#f5f6fa")
     btn_frame.pack(pady=18)
@@ -363,25 +365,25 @@ def delete_book():
     tk.Button(
         btn_frame,
         text="删除",
-        command=lambda: delete_book_confirm(title_entry),
+        command=lambda: delete_book_confirm(barcode_entry),
         **btn_style
     ).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=delete_book_window.destroy, **btn_style).pack(side="left", padx=14)
 
-def delete_book_confirm(title_entry):
+def delete_book_confirm(barcode_entry):
     # 获取输入框的值
-    title = title_entry.get().strip()
+    barcode = barcode_entry.get().strip()
 
     # 检查是否为空
-    if not title:
-        msg.showwarning("警告", "请输入书名")
+    if not barcode:
+        msg.showwarning("警告", "请输入条形码")
         return
 
     # 删除数据到数据库
     try:
         database_cursor.execute(
-            "DELETE FROM book_info WHERE title=?",
-            (title,)
+            "DELETE FROM book_info WHERE barcode=?",
+            (barcode,)
         )
         database_connection.commit()
         msg.showinfo("删除成功", "书籍删除成功！")
@@ -666,29 +668,41 @@ def view_borrowed_books():
     text.insert("end", result_str)
     text.config(state="disabled")
 def view_book_list():
-    # 读取书籍列表
+    # 读取书籍列表并用Treeview控件显示
     book_list_window = tk.Toplevel(root)
     book_list_window.title("书籍列表")
-    book_list_window.geometry("600x400")
+    book_list_window.geometry("900x400")
     book_list_window.configure(bg="#f5f6fa")
     tk.Label(book_list_window, text="书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
-    input_frame = tk.Frame(book_list_window, bg="#f5f6fa")
-    input_frame.pack(pady=10, padx=20, fill="x")
+
+    columns = [
+        "barcode", "title", "author", "publisher", "year", "isbn",
+        "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"
+    ]
+    col_names = [
+        "条形码", "书名", "作者", "出版社", "年份", "ISBN",
+        "分类号", "索书号", "可借阅数量", "总数量", "借阅次数"
+    ]
+
+    tree = ttk.Treeview(book_list_window, columns=columns, show="headings", height=15)
+    for col, name in zip(columns, col_names):
+        tree.heading(col, text=name)
+        tree.column(col, width=80, anchor="center")
+    tree.pack(expand=True, fill="both", padx=10, pady=10)
+
     # 查询所有书籍
-    database_cursor.execute("SELECT * FROM book_info")
-    books = database_cursor.fetchall()
-    if not books:
-        msg.showinfo("提示", "没有书籍信息")
-        return
-    # 显示书籍信息
-    result_str = "\n".join([f'书名:{b[1]}, 作者:{b[2]}, 出版社:{b[3]}, 年份:{b[4]}, ISBN:{b[5]}, 分类号:{b[6]}, 索书号:{b[7]}, 可借阅数量:{b[8]}, 总数量:{b[9]}' for b in books])
-    result_window = tk.Toplevel(root)
-    result_window.title("书籍列表")
-    result_window.geometry("500x400")
-    text = tk.Text(result_window, font=("微软雅黑", 12))
-    text.pack(expand=True, fill="both")
-    text.insert("end", result_str)
-    text.config(state="disabled")
+    try:
+        database_cursor.execute("SELECT * FROM book_info")
+        books = database_cursor.fetchall()
+        if not books:
+            msg.showinfo("提示", "没有书籍信息")
+            book_list_window.destroy()
+            return
+        for book in books:
+            tree.insert("", "end", values=book)
+    except Exception as e:
+        msg.showerror("错误", f"查询书籍列表失败: {e}")
+        book_list_window.destroy()
 def view_user_info():
         # 让用户输入用户名
         import tkinter.simpledialog
