@@ -1,30 +1,65 @@
-import tkinter as tk # 图形界面库
-import tkinter.messagebox as msg #消息框
-import sqlite3 as sql # 数据库连接
-import hashlib # 哈希加密库
+import tkinter as tk  # 图形界面库
+import tkinter.messagebox as msg  # 消息框
+import sqlite3 as sql  # 数据库连接
+import hashlib  # 哈希加密库
 import os
 from tkinter import ttk
-import datetime # 日期时间库
-
-
-
-# 定义日志字段
-# log_string = 
-# type_op out_time user book
+import datetime  # 日期时间库
 
 # 初始化数据库
 database_path = r"D:\GitRepo\Python_Book_Manage_System\data.db"
 database_connection = sql.connect(database_path)
 database_cursor = database_connection.cursor()
+
+
 root = tk.Tk()
 root.title("图书管理系统")
 root.geometry("400x550")
 root.resizable(False, False)
 
-UserID = ""
+def sign_up(username_entry, password_entry, confirm_password_entry, user_type_var):
+    username = username_entry.get().strip()
+    password = password_entry.get()
+    confirm_password = confirm_password_entry.get()
+    user_type = user_type_var.get()
+
+    if not username or not password or not confirm_password:
+        msg.showwarning("警告", "请填写所有字段")
+        return
+
+    if password != confirm_password:
+        msg.showwarning("警告", "两次输入的密码不一致")
+        return
+
+    # 检查用户名是否已存在
+    database_cursor.execute("SELECT * FROM user_info WHERE user_name=?", (username,))
+    if database_cursor.fetchone():
+        msg.showwarning("警告", "用户名已存在")
+        return
+
+    # 密码加密
+    salt = os.urandom(16).hex()  # 生成随机盐
+    password_hash = hashlib.sha256((password + salt).encode('utf-8')).hexdigest()
+
+    try:
+        database_cursor.execute(
+            "INSERT INTO user_info (user_name, user_passwd_e, salt ,user_cate) VALUES (?, ?, ?, ?)",
+            (username, password_hash, salt, user_type)
+        )
+        database_connection.commit()
+        msg.showinfo("注册成功", "注册成功，请登录！")
+        # 关闭注册窗口
+        for widget in tk._default_root.winfo_children():
+            if isinstance(widget, tk.Toplevel) and widget.title() == "注册":
+                widget.destroy()
+                break
+    except Exception as e:
+        msg.showerror("错误", f"注册失败: {e}")
+
+
 # 定义功能函数
 def sign_in():
-    global UserID 
+    global UserID
     # 获取登录窗口的用户名和密码输入框
     log_window = None
     username_entry = None
@@ -80,7 +115,6 @@ def sign_in():
         reader_window()
 
 
-
 def log_window_launch():
     log_window = tk.Toplevel(root)
     log_window.title("登录")
@@ -94,11 +128,13 @@ def log_window_launch():
     input_frame = tk.Frame(log_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
 
-    tk.Label(input_frame, text="用户名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=10, sticky="e")
+    tk.Label(input_frame, text="用户名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=10,
+                                                                                    sticky="e")
     username_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     username_entry.grid(row=0, column=1, padx=5, pady=10, sticky="we")
 
-    tk.Label(input_frame, text="密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=10, sticky="e")
+    tk.Label(input_frame, text="密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=10,
+                                                                                  sticky="e")
     password_entry = tk.Entry(input_frame, show="*", font=("微软雅黑", 12))
     password_entry.grid(row=1, column=1, padx=5, pady=10, sticky="we")
 
@@ -138,22 +174,28 @@ def reg_window_launch():
     input_frame = tk.Frame(reg_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
 
-    tk.Label(input_frame, text="用户名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="用户名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8,
+                                                                                    sticky="e")
     username_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     username_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
-    tk.Label(input_frame, text="密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=1, column=0, padx=5, pady=8,
+                                                                                  sticky="e")
     password_entry = tk.Entry(input_frame, show="*", font=("微软雅黑", 12))
     password_entry.grid(row=1, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
-    tk.Label(input_frame, text="确认密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=2, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="确认密码：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=2, column=0, padx=5, pady=8,
+                                                                                      sticky="e")
     confirm_password_entry = tk.Entry(input_frame, show="*", font=("微软雅黑", 12))
     confirm_password_entry.grid(row=2, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
-    tk.Label(input_frame, text="用户类型：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=3, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="用户类型：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=3, column=0, padx=5, pady=8,
+                                                                                      sticky="e")
     user_type_var = tk.IntVar(value=0)
-    user_cate_radiobtn1 = tk.Radiobutton(input_frame, text="普通用户", variable=user_type_var, value=1, bg="#f5f6fa", font=("微软雅黑", 11))
-    user_cate_radiobtn2 = tk.Radiobutton(input_frame, text="管理员", variable=user_type_var, value=2, bg="#f5f6fa", font=("微软雅黑", 11))
+    user_cate_radiobtn1 = tk.Radiobutton(input_frame, text="普通用户", variable=user_type_var, value=1, bg="#f5f6fa",
+                                         font=("微软雅黑", 11))
+    user_cate_radiobtn2 = tk.Radiobutton(input_frame, text="管理员", variable=user_type_var, value=2, bg="#f5f6fa",
+                                         font=("微软雅黑", 11))
     user_cate_radiobtn1.grid(row=3, column=1, sticky="w", padx=2)
     user_cate_radiobtn2.grid(row=3, column=2, sticky="w", padx=2)
 
@@ -183,49 +225,11 @@ def reg_window_launch():
     tk.Button(btn_frame, text="取消", command=reg_window.destroy, **btn_style).pack(side="left", padx=14)
 
 
-def sign_up(username_entry, password_entry, confirm_password_entry, user_type_var):
-    username = username_entry.get().strip()
-    password = password_entry.get()
-    confirm_password = confirm_password_entry.get()
-    user_type = user_type_var.get()
 
-    if not username or not password or not confirm_password:
-        msg.showwarning("警告", "请填写所有字段")
-        return
 
-    if password != confirm_password:
-        msg.showwarning("警告", "两次输入的密码不一致")
-        return
-
-    # 检查用户名是否已存在
-    database_cursor.execute("SELECT * FROM user_info WHERE user_name=?", (username,))
-    if database_cursor.fetchone():
-        msg.showwarning("警告", "用户名已存在")
-        return
-
-    # 密码加密
-    salt = os.urandom(16).hex()  # 生成随机盐
-    password_hash = hashlib.sha256((password+salt).encode('utf-8')).hexdigest()
-
-    try:
-        database_cursor.execute(
-            "INSERT INTO user_info (user_name, user_passwd_e, salt ,user_cate) VALUES (?, ?, ?, ?)",
-            (username, password_hash, salt, user_type)
-        )
-        database_connection.commit()
-        msg.showinfo("注册成功", "注册成功，请登录！")
-        # 关闭注册窗口
-        for widget in tk._default_root.winfo_children():
-            if isinstance(widget, tk.Toplevel) and widget.title() == "注册":
-                widget.destroy()
-                break
-    except Exception as e:
-        msg.showerror("错误", f"注册失败: {e}")
 
 # 图书信息表字段
 # ["barcode", "title", "author", "publisher", "year", "isbn", "clc_code", "call_number", "avaliable_copies", "total_copies", "lend_times"] 
-
-
 
 
 def add_book():
@@ -290,9 +294,10 @@ def add_book():
         btn_frame, text="取消", command=add_book_window.destroy, **btn_style
     ).pack(side="left", padx=18)
 
-def add_book_confirm(barcode_entry,title_entry, author_entry, publisher_entry, year_entry,
-            isbn_entry, clc_code_entry, call_number_entry,
-            available_copies_entry, total_copies_entry):
+
+def add_book_confirm(barcode_entry, title_entry, author_entry, publisher_entry, year_entry,
+                     isbn_entry, clc_code_entry, call_number_entry,
+                     available_copies_entry, total_copies_entry):
     # 获取输入框的值
     barcode = barcode_entry.get().strip()
     title = title_entry.get().strip()
@@ -324,23 +329,27 @@ def add_book_confirm(barcode_entry,title_entry, author_entry, publisher_entry, y
     try:
         database_cursor.execute(
             "INSERT INTO book_info (barcode, title, author, publisher, year, isbn, clc_code, call_number, avaliable_copies, total_copies) VALUES (?,?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (barcode,title, author, publisher, year, isbn, clc_code, call_number, int(available_copies), int(total_copies))
+            (barcode, title, author, publisher, year, isbn, clc_code, call_number, int(available_copies),
+             int(total_copies))
         )
         database_connection.commit()
         msg.showinfo("添加成功", "书籍添加成功！")
     except Exception as e:
         msg.showerror("错误", f"添加书籍失败: {e}")
 
+
 def delete_book():
     delete_book_window = tk.Toplevel(root)
     delete_book_window.title("删除书籍")
     delete_book_window.geometry("400x200")
     delete_book_window.configure(bg="#f5f6fa")
-    tk.Label(delete_book_window, text="删除书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(delete_book_window, text="删除书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
     # 输入区
     input_frame = tk.Frame(delete_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5,
+                                                                                             pady=8, sticky="e")
     barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
     # 按钮区
@@ -365,6 +374,7 @@ def delete_book():
     ).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=delete_book_window.destroy, **btn_style).pack(side="left", padx=14)
 
+
 def delete_book_confirm(barcode_entry):
     # 获取输入框的值
     barcode = barcode_entry.get().strip()
@@ -384,6 +394,7 @@ def delete_book_confirm(barcode_entry):
         msg.showinfo("删除成功", "书籍删除成功！")
     except Exception as e:
         msg.showerror("错误", f"删除书籍失败: {e}")
+
 
 def modify_book():
     # 创建窗口
@@ -429,7 +440,7 @@ def modify_book():
             return
         col = columns[col_idx]
         if col == "lend_times":
-            msg.showerror("错误","系统不允许直接修改借阅次数")
+            msg.showerror("错误", "系统不允许直接修改借阅次数")
             return
         x, y, width, height = tree.bbox(item, column)
         value = tree.set(item, col)
@@ -442,6 +453,7 @@ def modify_book():
             new_value = entry.get()
             tree.set(item, col, new_value)
             entry.destroy()
+
         entry.bind("<Return>", save_edit)
         entry.bind("<FocusOut>", lambda e: entry.destroy())
         edit_widgets[(item, col)] = entry
@@ -503,6 +515,7 @@ def modify_book():
               activebackground="#718093", activeforeground="white", bd=0, relief="flat",
               cursor="hand2", command=modify_book_window.destroy).pack(side="left", padx=14)
 
+
 def modify_book_confirm(title_entry):
     # 获取输入框的值
     title = title_entry.get().strip()
@@ -522,16 +535,20 @@ def modify_book_confirm(title_entry):
         msg.showinfo("修改成功", "书籍信息修改成功！")
     except Exception as e:
         msg.showerror("错误", f"修改书籍信息失败: {e}")
+
+
 def search_book():
     search_book_window = tk.Toplevel(root)
     search_book_window.title("查询书籍")
     search_book_window.geometry("400x200")
     search_book_window.configure(bg="#f5f6fa")
-    tk.Label(search_book_window, text="查询书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(search_book_window, text="查询书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
     # 输入区
     input_frame = tk.Frame(search_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="书名：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8,
+                                                                                  sticky="e")
     title_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     title_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
     # 按钮区
@@ -555,6 +572,7 @@ def search_book():
         **btn_style
     ).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=search_book_window.destroy, **btn_style).pack(side="left", padx=14)
+
 
 def search_book_confirm(title_entry):
     # 获取输入框的值
@@ -607,10 +625,12 @@ def borrow_book():
     borrow_book_window.title("借阅书籍")
     borrow_book_window.geometry("400x200")
     borrow_book_window.configure(bg="#f5f6fa")
-    tk.Label(borrow_book_window, text="借阅书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(borrow_book_window, text="借阅书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
     input_frame = tk.Frame(borrow_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5,
+                                                                                             pady=8, sticky="e")
     barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
@@ -627,6 +647,7 @@ def borrow_book():
         "relief": "flat",
         "cursor": "hand2"
     }
+
     def borrow_book_confirm():
         barcode = barcode_entry.get().strip()
         if not barcode:
@@ -664,16 +685,20 @@ def borrow_book():
 
     tk.Button(btn_frame, text="借阅", command=borrow_book_confirm, **btn_style).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=borrow_book_window.destroy, **btn_style).pack(side="left", padx=14)
+
+
 def return_book():
     # 归还书籍窗口
     return_book_window = tk.Toplevel(root)
     return_book_window.title("归还书籍")
     return_book_window.geometry("400x200")
     return_book_window.configure(bg="#f5f6fa")
-    tk.Label(return_book_window, text="归还书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(return_book_window, text="归还书籍", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
     input_frame = tk.Frame(return_book_window, bg="#f5f6fa")
     input_frame.pack(pady=10, padx=20, fill="x")
-    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5, pady=8, sticky="e")
+    tk.Label(input_frame, text="条形码(barcode)：", font=("微软雅黑", 12), bg="#f5f6fa").grid(row=0, column=0, padx=5,
+                                                                                             pady=8, sticky="e")
     barcode_entry = tk.Entry(input_frame, font=("微软雅黑", 12))
     barcode_entry.grid(row=0, column=1, padx=5, pady=8, sticky="we", columnspan=2)
 
@@ -690,6 +715,7 @@ def return_book():
         "relief": "flat",
         "cursor": "hand2"
     }
+
     def return_book_confirm():
         barcode = barcode_entry.get().strip()
         if not barcode:
@@ -724,6 +750,8 @@ def return_book():
 
     tk.Button(btn_frame, text="归还", command=return_book_confirm, **btn_style).pack(side="left", padx=14)
     tk.Button(btn_frame, text="取消", command=return_book_window.destroy, **btn_style).pack(side="left", padx=14)
+
+
 def view_borrowed_books():
     # 读取所有未归还书籍（即当前用户已借但未归还的书籍）
     borrowed_books = set()
@@ -768,7 +796,8 @@ def view_borrowed_books():
     window.title("未归还书籍列表")
     window.geometry("900x300")
     window.configure(bg="#f5f6fa")
-    tk.Label(window, text="未归还书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(window, text="未归还书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
 
     columns = [
         "barcode", "title", "author", "publisher", "year", "isbn",
@@ -787,13 +816,16 @@ def view_borrowed_books():
 
     for book in books_info:
         tree.insert("", "end", values=book)
+
+
 def view_book_list():
     # 读取书籍列表并用Treeview控件显示
     book_list_window = tk.Toplevel(root)
     book_list_window.title("书籍列表")
     book_list_window.geometry("900x400")
     book_list_window.configure(bg="#f5f6fa")
-    tk.Label(book_list_window, text="书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(pady=(18, 10))
+    tk.Label(book_list_window, text="书籍列表", font=("微软雅黑", 18, "bold"), bg="#f5f6fa", fg="#273c75").pack(
+        pady=(18, 10))
 
     columns = [
         "barcode", "title", "author", "publisher", "year", "isbn",
@@ -823,21 +855,23 @@ def view_book_list():
     except Exception as e:
         msg.showerror("错误", f"查询书籍列表失败: {e}")
         book_list_window.destroy()
+
+
 def view_user_info():
-        username = UserID
-        # 查询数据库
-        try:
-            database_cursor.execute("SELECT user_name, user_cate FROM user_info WHERE user_name=?", (username,))
-            result = database_cursor.fetchone()
-            if not result:
-                msg.showwarning("提示", "未找到该用户")
-                return
-            user_name, user_cate = result
-            user_type_str = "管理员" if str(user_cate) == "2" else "普通用户"
-            info = f"用户名: {user_name}\n用户类型: {user_type_str}"
-            msg.showinfo("用户信息", info)
-        except Exception as e:
-            msg.showerror("错误", f"查询用户信息失败: {e}")
+    username = UserID
+    # 查询数据库
+    try:
+        database_cursor.execute("SELECT user_name, user_cate FROM user_info WHERE user_name=?", (username,))
+        result = database_cursor.fetchone()
+        if not result:
+            msg.showwarning("提示", "未找到该用户")
+            return
+        user_name, user_cate = result
+        user_type_str = "管理员" if str(user_cate) == "2" else "普通用户"
+        info = f"用户名: {user_name}\n用户类型: {user_type_str}"
+        msg.showinfo("用户信息", info)
+    except Exception as e:
+        msg.showerror("错误", f"查询用户信息失败: {e}")
 
 
 def view_borrow_history():
@@ -865,7 +899,8 @@ def view_borrow_history():
         return
 
     # 显示结果
-    result_str = "\n".join([f'操作:{("借阅" if l["type_op"]==1 else "归还")}, 时间:{l["out_time"]}, 书籍:{l["book"]}' for l in logs])
+    result_str = "\n".join(
+        [f'操作:{("借阅" if l["type_op"] == 1 else "归还")}, 时间:{l["out_time"]}, 书籍:{l["book"]}' for l in logs])
     result_window = tk.Toplevel(root)
     result_window.title(f"{username} 的借阅记录")
     result_window.geometry("500x400")
@@ -873,6 +908,8 @@ def view_borrow_history():
     text.pack(expand=True, fill="both")
     text.insert("end", result_str)
     text.config(state="disabled")
+
+
 def view_borrow_history_total():
     # 管理员查看总借阅记录（Treeview显示）
     logs = []
@@ -912,6 +949,7 @@ def view_borrow_history_total():
         book = l.get("book", "")
         tree.insert("", "end", values=(op_str, out_time, user, book))
 
+
 def admin_window():
     main_window = tk.Toplevel(root)
     main_window.title("管理员主界面")
@@ -950,9 +988,11 @@ def admin_window():
     # 两列布局
     for idx, (text, cmd) in enumerate(btn_texts_cmds):
         row, col = divmod(idx, 2)
-        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7, sticky="we")
+        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7,
+                                                                       sticky="we")
     btn_frame.grid_columnconfigure(0, weight=1)
     btn_frame.grid_columnconfigure(1, weight=1)
+
 
 def reader_window():
     reader_win = tk.Toplevel(root)
@@ -989,10 +1029,10 @@ def reader_window():
     # 两列布局
     for idx, (text, cmd) in enumerate(btn_texts_cmds):
         row, col = divmod(idx, 2)
-        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7, sticky="we")
+        tk.Button(btn_frame, text=text, command=cmd, **btn_style).grid(row=row, column=col, padx=12, pady=7,
+                                                                       sticky="we")
     btn_frame.grid_columnconfigure(0, weight=1)
     btn_frame.grid_columnconfigure(1, weight=1)
-
 
 
 # 设置整体背景色
