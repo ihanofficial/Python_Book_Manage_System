@@ -13,8 +13,10 @@ database_cursor = database_connection.cursor()
 
 
 root = tk.Tk()
+root.iconphoto(True, tk.PhotoImage(file='ico.png'))
+print(os.curdir)
 root.title("图书管理系统")
-root.geometry("400x550")
+root.geometry("400x450")
 root.resizable(False, False)
 
 def sign_up(username_entry, password_entry, confirm_password_entry, user_type_var):
